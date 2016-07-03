@@ -1,0 +1,4 @@
+/*.jerror 		{ color:#ff0000; margin:3px 0px 0px 6px; }*/
+.jerror 		{ background-color: #f2dede; color: #b94a48; padding: 15px; margin-bottom: 18px; border: 1px solid #b94a48; border-radius: 2px; }
+
+.help-inline 	{ display: inline; float: left; padding: 6px 0px 0px 12px; color: #a94442; }

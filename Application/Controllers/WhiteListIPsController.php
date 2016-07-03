@@ -1,0 +1,91 @@
+<?php
+
+/**
+ * WhiteList IPs Controller
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application/Controllers
+ * @version 1.0.1
+*/
+
+namespace Application\Controllers;
+
+use Application\Services\PagerService;
+use Application\Services\FilterService;
+
+use Application\Models\WhiteListIPModel;
+
+use Core\Config;
+
+/**
+ * WhiteList Ips Controller Class
+ * 
+*/
+class WhiteListIPsController extends BaseController {
+
+	/**
+	 * Datagrid Listing page
+	 * 
+	 * @return null 
+	*/
+	public function Index() {
+
+		$WhiteListIPModel = new WhiteListIPModel();
+
+		$this->render('WhiteListIPs', [
+			'pageTitle' 	=> '<i class="material-icons">device_hub</i> Whitelist Ips',
+			'WhiteListIPs' 	=> $WhiteListIPModel->getAll(PagerService::getLimits(), $this->session->filter),
+			'pager'			=> PagerService::getPager($WhiteListIPModel->db->count()),
+			'filters'		=> FilterService::getTableRowFilters('WhiteListIPs', ['id', 'ip', 'description']),
+		]);
+	}
+
+	/**
+	 * Adds a new WhiteList Ip
+	 * 
+	 * @return null 
+	*/
+	public function AddExec() {
+
+		$WhiteListIPModel = new WhiteListIPModel();
+		$insertResponse = $WhiteListIPModel->insert([]);
+
+		$this->renderJson([
+			'newId'		=> $WhiteListIPModel->db->insertId(),
+			'message' 	=> (in_array($insertResponse, [1])) ? 'IP whitelist added successfully.' : 'Could not add IP whitelist.',
+			'success' 	=> (in_array($insertResponse, [1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Updates a field with a received value
+	 * 
+	 * @return null 
+	*/
+	public function UpdateFieldExec() {
+
+		$updateResponse = (new WhiteListIPModel())->update($this->post, $this->post['id']);
+
+		$this->renderJson([
+			'message' => (in_array($updateResponse, [0, 1])) ? 'Record updated successfully.' : 'Could not update record.',
+			'success' => (in_array($updateResponse, [0, 1])) ? true : false,
+		]);
+	}
+	
+	/**
+	 * Deletes WhiteList Ip Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteExec() {
+
+		$deleteResponse = (new WhiteListIPModel())->delete($this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($deleteResponse, [0, 1])) ? 'WhiteListIP deleted successfully.' : 'Could not delete WhiteListIP.',
+			'success' => (in_array($deleteResponse, [0, 1])) ? true : false,
+		]);
+	}
+}

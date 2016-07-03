@@ -1,0 +1,249 @@
+<?php
+
+/**
+ * Integity Service Determines the integrity of the Application
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application\Services
+ * @version 1.0.1
+*/
+
+namespace Application\Services;
+
+use Core\Config;
+use Core\DBModel;
+
+/**
+ * Integity Service Class Determines the integrity of the Application
+ * 
+*/
+class IntegrityService
+{
+    /**
+     * @var bool $_error Determines if an error is encountered.
+    */
+    private static $_error = false;
+
+    /**
+     * @var array $_files The list of files for integrity check.
+    */
+    private static $_files = [
+        'AccessRight'   => [
+            'Controllers/AccessRightsController.php',
+            'Models/AccessRightsModel.php',
+            'Services/AccessRightsService.php',
+            'Services/SessionService.php',
+            'Views/AccessRights.php',
+        ],
+        'Auth'          => [
+            'Services/AuthService.php',
+            'Services/SessionService.php',
+        ],
+        'Benchmark'     => [
+            'Services/BenchmarkService.php',
+        ],
+        'Breadcrumb'    => [
+            'Services/BreadcrumbService.php',
+        ],
+        'Cookie'        => [
+            'Services/CookieService.php',
+        ],
+        'Dashboard'     => [
+            'Controllers/DashboardController.php',
+            'Views/Dashboard.php',
+        ],
+        'Date'          => [
+            'Services/DateService.php',
+        ],
+        'Debug'         => [
+            'Services/DebugService.php',
+        ],
+        'Error'         => [
+            'Controllers/ErrorController.php',
+            'Services/ErrorHandlerService.php',
+            'Views/Error.php',
+        ],
+        'Filter'        => [
+            'Services/FilterService.php',
+            'Services/SessionService.php',
+        ],
+        'Http'          => [
+            'Services/HTTPService.php',
+        ],
+        'Integrity'     => [
+            'Services/IntegrityService.php',
+        ],
+        'Log'           => [
+            'Controllers/LogsController.php',
+            'Models/LogModel.php',
+            'Services/LogService.php',
+            'Services/SessionService.php',
+            'Views/Logs.php',
+        ],
+        'Mail'          => [
+            'Actions/MailAction.php',
+            'Models/EmailTemplateModel.php',
+            'Services/MailService.php',
+            'Vendors/PHPMailer/class.smtp.php',
+        ],
+        'Pager'         => [
+            'Services/PagerService.php',
+            'Services/SessionService.php',
+        ],
+        'Security'      => [
+            'Services/SecurityService.php',
+        ],
+        'Session'       => [
+            'Services/SessionService.php',
+        ],
+        'String'        => [
+            'Services/StringsService.php',
+        ],
+        'User'          => [
+            'Controllers/LoginController.php',
+            'Controllers/UsersController.php',
+            'Actions/MailAction.php',
+            'Models/UserModel.php',
+            'Models/UserTypeModel.php',
+            'Services/UsersService.php',
+            'Services/MailService.php',
+            'Vendors/PHPMailer/class.smtp.php',
+            'Views/Login.php',
+            'Views/PasswordLost.php',
+            'Views/PasswordReset.php',
+            'Views/Users.php',
+        ],
+        'WhiteListIP'   => [
+            'Controllers/WhiteListIPsController.php',
+            'Models/WhiteListIPModel.php',
+            'Services/WhiteListIPService.php',
+            'Views/WhiteListIPs.php',
+        ],
+    ];
+
+    /**
+     * @var array $_tables The list of tables for integrity check.
+    */
+    private static $_tables = [
+        'AccessRight' => [
+            'access_rights',
+        ],
+        'Mail' => [
+            'email_templates',
+        ],
+        'Log' => [
+            'logs',
+        ],
+        'User' => [
+            'users',
+            'users_types',
+        ],
+        'WhiteListIP' => [
+            'whitelisted_ips',
+        ],
+    ];
+
+    /**
+     * Scans for files and tables integrity.
+     *
+     * @return null If an error is encoutered the operation will halt with a message for missing files/tables.
+    */
+    public static function check()
+    {
+        self::_checkFiles();
+        self::_checkTables();
+
+        if (self::$_error) {
+            die;
+        }
+    }
+
+    /**
+     * Scans for files integrity.
+     *
+     * @return null If errors are encoutered it will output the list of missing files.
+    */
+    private static function _checkFiles() {
+
+        $modules = Config::get('modules');
+
+        $missingFiles = [];
+
+        foreach ($modules as $module => $enabled) {
+            if ($enabled) {
+                if (isset(self::$_files[$module])) {
+                    foreach (self::$_files[$module] as $file) {
+                        if (!file_exists(dirname(__FILE__) . '/../' . $file)) {
+                            $missingFiles[$module][] = $file;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (count($missingFiles)) {
+            
+            echo '<strong>The following modules have missing FILES. Please fix this first!</strong><br /><br />';
+
+            echo '<pre>';
+            print_r($missingFiles);
+            echo '</pre>';
+
+            self::$_error = true;
+        }
+    }
+
+    /**
+     * Scans for tables integrity.
+     *
+     * @return null If errors are encoutered it will output the list of missing tables.
+    */
+    private static function _checkTables() {
+       
+        $modules = Config::get('modules');
+
+        $missingTables = [];
+
+        $GenericModel = new _Generic_Model;
+
+        $defaultDatabase = Config::get('db.types.'.Config::get('db.type.default').'.database');
+
+        foreach ($modules as $module => $enabled) {
+            if ($enabled) {
+                if (isset(self::$_tables[$module])) {
+                    foreach (self::$_tables[$module] as $table) {
+
+                        if (!$GenericModel->db->tableExist($defaultDatabase, $table)) {
+                            $missingTables[$module][] = $table;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (count($missingTables)) {
+            
+            echo '<strong>The following modules have missing TABLES. Please fix this first!</strong><br /><br />';
+
+            echo '<pre>';
+            print_r($missingTables);
+            echo '</pre>';
+
+            self::$_error = true;
+        }
+    }
+}
+
+/**
+ * Generic Model Class Is used to invoke the DBModel while scanning for tables
+ * 
+*/
+class _Generic_Model extends DBModel {
+
+    /**
+     * @var string $table The table name set a default.
+    */
+    protected $table = '';
+}

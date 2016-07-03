@@ -1,0 +1,107 @@
+<?php
+
+/**
+ * Auth Service Determines wheather a user is logged in or not
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application\Services
+ * @version 1.0.1
+*/
+
+namespace Application\Services;
+
+use Application\Models\UserModel;
+
+use Application\Services\SessionService;
+
+use Core\Config;
+
+/**
+ * Auth Service Class Determines wheather a user is logged in or not
+ * 
+*/
+class AuthService {
+
+	/**
+	 * Checks if the user is authenticated or not.
+	 *
+	 * @param string $email The user email used for authentication.
+	 * @param string $password The user password used for authentication.
+	 * @param int $loginAttempts How many times a user is allowed to retry his credentials.
+	 * @param int $loginAllowAccessAfter Afyer how much time the user is allowed to retry his credentials in case the client access is locked.
+	 * @param string $keepMeLogged Whether to keep the user logged in or not. The value send from checkbox (nothing or 'on')
+	 * @todo $keepMeLogged should be boolean variable not otherwise.
+	 * @return bool True if the user is logged, false otherwise.
+	*/
+	public static function checkLogin($email, $password, $loginAttempts, $loginAllowAccessAfter, $keepMeLogged) {
+
+		$UserModel = new UserModel();
+		$UserModel->db->where("email='".addslashes($email)."' AND deleted_at = '0'");
+		$adminUser = $UserModel->db->getRow();
+
+		if (empty($adminUser)) {
+			return false;
+		}
+
+		$session = new SessionService;
+
+		if ($adminUser->login_attempts >= $loginAttempts) {
+
+			if (time() < strtotime($adminUser->last_login_attempt) + $loginAllowAccessAfter) {
+				
+				$session->locked 			= true;
+				$session->locked_until 	= date('Y-m-d H:i:s', time() + $loginAllowAccessAfter);
+
+				return false;
+
+			} else {
+				$adminUser->login_attempts 	= 0;
+				$session->locked 			= false;
+			}
+		}
+
+		if ($adminUser->password != sha1($password) ) {
+
+			$UserModel = new UserModel();
+			$UserModel->update([
+				'login_attempts' 		=> $adminUser->login_attempts + 1,
+				'last_login_attempt' 	=> date('Y-m-d H:i:s'),
+			], $adminUser->id);
+
+			return false;
+
+		} else {
+
+			// save login attempts {
+			$UserModel = new UserModel();
+
+			$UserModel->db->model->login_attempts = 1;
+			$UserModel->db->model->last_login_attempt = date('Y-m-d H:i:s');
+
+			$UserModel->db->where('id = ' . $adminUser->id);
+			$UserModel->db->update();
+			// save login attempts }
+		}
+
+		$session->user 	= (array)$adminUser;
+		$session->login = true;
+
+		if ($keepMeLogged == 'on') {
+
+			if (Config::get('modules')['Cookies']) {
+
+				$cookie  = new \Application\Services\CookieService;
+
+				$cookie->logged 			= 	true;
+				$cookie->user_id 			= 	$adminUser->id;
+				$cookie->user_name 			= 	$adminUser->name;
+				$cookie->user_email 		= 	$adminUser->email;
+				$cookie->user_type 			= 	$adminUser->user_type;
+			}
+		}
+
+		return true;
+	}
+}

@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * Users Controller
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application/Controllers
+ * @version 1.0.1
+*/
+
+namespace Application\Controllers;
+
+use Application\Services\PagerService;
+use Application\Services\FilterService;
+use Application\Services\HttpService;
+
+use Application\Models\UserModel;
+use Application\Models\UserTypeModel;
+
+use Application\Actions\MailAction;
+
+use Core\Config;
+
+/**
+ * Users Controller Class
+ * 
+*/
+class UsersController extends BaseController {
+
+	/**
+	 * Datagrid Listing page
+	 * 
+	 * @return null 
+	*/
+	public function Index() {
+
+		$UserModel = new UserModel();
+
+		$this->render('Users', [
+			'pageTitle' => '<i class="material-icons">group</i> Users',
+			'users' 	=> $UserModel->getAll(PagerService::getLimits()),
+			'userTypes' => (new UserTypeModel())->getAll(),
+			'pager'		=> PagerService::getPager($UserModel->db->count()),
+			'filters'	=> FilterService::getTableRowFilters('Users', ['id', 'name', 'email', 'user_type', null, 'login_attempts', null, null]),
+		]);
+	}
+
+	/**
+	 * Retrieve user types list
+	 * 
+	 * @return null 
+	*/
+	public function GetTypes() {
+
+		$UserTypeModel = new UserTypeModel();
+
+		$this->renderJson([
+			'data'		=> $UserTypeModel->getAll(),
+			'message' 	=> (!empty($UserTypeModel)) ? 'User types loaded successfully.' : 'Could not load User types.',
+			'success' 	=> (!empty($UserTypeModel)) ? true : false,
+		]);
+	}
+
+	/**
+	 * Adds a new User
+	 *
+	 * @todo Should exist in the page a button to send invitation with new account instead of: __MailAction::sendNewAccountEmail($data['email'], $this->post['password']);__
+	 * @todo ORM should allow to insert NULL if nothing specified
+	 * 
+	 * @return null 
+	*/
+	public function AddExec() {
+
+		$UserModel 		= new UserModel();
+		$insertResponse = $UserModel->insert(['user_type' => 0]);
+
+		$this->renderJson([
+			'newId'		=> $UserModel->db->insertId(),
+			'message' 	=> (in_array($insertResponse, [1])) ? 'User added successfully.' : 'Could not add User.',
+			'success' 	=> (in_array($insertResponse, [1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Updates a field with a received value
+	 * 
+	 * @return null 
+	*/
+	public function UpdateFieldExec() {
+
+		if (isset($this->post['password'])) {
+			$this->post['password'] = sha1($this->post['password']);
+		}
+
+		try {
+			$updateResponse = (new UserModel())->update($this->post, $this->post['id']);
+			$rs = [
+				'message' => 'Record updated successfully.',
+				'success' => true,
+			];
+		} catch (\Exception $e) {
+			$rs = [
+				'message' 			=> 'Could not update record.',
+				'messageDetails' 	=> $e->getMessage(),
+				'success' 			=> false,
+			];
+		}
+
+		$this->renderJson($rs);
+	}
+
+	/**
+	 * Save User Profile
+	 * 
+	 * @return null 
+	*/
+	public function ProfileExec() {
+
+		if (!isset($this->post['password'])) {
+			HttpService::code400();
+		}
+
+		$updateResponse = (new UserModel())->update(['password' => sha1($this->post['password'])], $this->session->user['id']);
+
+		$this->renderJson([
+			'message' => (in_array($updateResponse, [0, 1])) ? 'User profile updated successfully.' : 'Could not update user profile.',
+			'success' => (in_array($updateResponse, [0, 1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Deletes User Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteExec() {
+
+		$deleteResponse = (new UserModel())->delete($this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($deleteResponse, [1])) ? 'User deleted successfully.' : 'Could not delete user.',
+			'success' => (in_array($deleteResponse, [1])) ? true : false,
+		]);
+	}
+}

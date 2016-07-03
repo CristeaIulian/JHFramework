@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * HTTP Service Force Status Outputing or determine other http directives
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application\Services
+ * @version 1.0.1
+*/
+
+namespace Application\Services;
+
+/**
+ * HTTP Service Class Force Status Outputing or determine other http directives
+ * 
+*/
+class HttpService {
+
+    /**
+     * Send a "400 Bad request" status code and halts the execution with a message accordingly.
+     *
+     * @return null.
+    */
+	public static final function code400() {
+		http_response_code(400);
+		die('400 Bad request');
+	}
+
+    /**
+     * Send a "401 Unauthorized" status code and halts the execution with a message accordingly.
+     *
+     * @return null.
+    */
+	public static final function code401() {
+		http_response_code(401);
+		die('401 Unauthorized');
+	}
+
+    /**
+     * Send a "403 Forbidden" status code and halts the execution with a message accordingly.
+     *
+     * @return null.
+    */
+	public static final function code403() {
+		http_response_code(403);
+		die('403 Forbidden');
+	}
+
+    /**
+     * Send a "405 Method Not Allowed" status code and halts the execution with a message accordingly.
+     *
+     * @return null.
+    */
+	public static final function code405() {
+		http_response_code(405);
+		die('405 Method Not Allowed');
+	}
+
+    /**
+     * Send a "500 Internal Server Error" status code and halts the execution with a message accordingly.
+     *
+     * @param bool $die Whether to halt the operation or not.
+     * @return null.
+    */
+	public static final function code500($die = true) {
+		
+		http_response_code(500);
+
+		echo '500 Internal Server Error';
+
+		if ($die) {
+			die;
+		}
+	}
+
+    /**
+     * Checks if there is a direct access in a file attempt. If so, a "403 Forbidden" status code is thrown
+     *
+     * @return null.
+    */
+	public static function checkViewDirectAccess()
+	{
+		if (basename($_SERVER['SCRIPT_NAME']) != 'index.php') {
+			self::code403();
+		}
+	}
+
+    /**
+     * Checks whether or not the request is ajax or not.
+     *
+     * @return bool TRUE if Ajax call, FALSE otherwise.
+    */
+	public static final function isAjax() {
+		return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) AND strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+	}
+}

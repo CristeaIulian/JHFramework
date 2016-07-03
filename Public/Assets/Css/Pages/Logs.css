@@ -1,0 +1,6 @@
+.clear {
+    clear: both;
+}
+.nav-item {
+    float: right; margin-left: 20px;
+}

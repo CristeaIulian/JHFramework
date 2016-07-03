@@ -1,0 +1,301 @@
+<?php
+
+/**
+ * Articles Controller
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application/Controllers
+ * @version 1.0.1
+*/
+
+namespace Application\Controllers;
+
+use Application\Services\PagerService;
+use Application\Services\FilterService;
+use Application\Services\StringsService;
+use Application\Services\HttpService;
+use Application\Services\FileService;
+
+use Application\Models\ArticleModel;
+use Application\Models\ArticlePhotoModel;
+use Application\Models\ArticleCategoryModel;
+use Application\Models\ArticleCommentsModel;
+
+use Core\Config;
+
+/**
+ * Articles Controller Class
+ * 
+*/
+class ArticlesController extends BaseController {
+
+	/**
+	 * Datagrid Listing page
+	 * 
+	 * @return null 
+	*/
+	public function Index() {
+
+		$ArticleModel = new ArticleModel();
+		$ArticleCategoryModel = new ArticleCategoryModel();
+
+		$this->render('Articles', [
+			'pageTitle' 	=> '<i class="material-icons">subtitles</i> Articles',
+			'categories'	=> $ArticleCategoryModel->db->getRows(),
+			'articles' 		=> $ArticleModel->getAll(PagerService::getLimits(), $this->session->filter),
+			'pager'			=> PagerService::getPager($ArticleModel->db->count()),
+			'filters'		=> FilterService::getTableRowFilters('Articles', ['t.id', null, 'aca.id', 'title', 'description', 'date_added', null, null, null, 'enabled', null]),
+		]);
+	}
+
+	/**
+	 * Retrieve Value of a specific Field
+	 * 
+	 * @return null 
+	*/
+	public function GetFieldData() {
+
+		$fieldData = (new ArticleModel())->getFieldData($this->post['field'], $this->post['id']);
+
+		if (!empty($this->post['shorten']) && $this->post['shorten']) {
+			$fieldData = StringsService::shorten($fieldData);
+		}
+
+		$this->renderJson([
+			'message' 	=> 'Data retrieved successfully.',
+			'data'		=> $fieldData,
+			'success' 	=> true,
+		]);
+	}
+
+	/**
+	 * Retrieve Description details of a specific Article
+	 * 
+	 * @return null 
+	*/
+	public function GetDescriptionDetails() {
+
+		$articleDetails = (new ArticleModel())->getDetails($this->post['id']);
+
+		$this->renderJson([
+			'message' 	=> 'Data retrieved successfully.',
+			'data'		=> [
+				'title' 		=> $articleDetails->title,
+				'description' 	=> $articleDetails->description,
+				'images' 		=> (new ArticlePhotoModel())->getAll($this->post['id']),
+			],
+			'success' 	=> true,
+		]);
+	}
+
+	// public function GetArticlePhotos() {
+
+	// 	$images = (new ArticlePhotoModel())->getAll($this->post['id']);
+
+	// 	$this->renderJson([
+	// 		'message' 	=> 'Images retrieved successfully.',
+	// 		'images'	=> $images,
+	// 		'success' 	=> true,
+	// 	]);
+	// }
+
+	/**
+	 * Retrieve Comments of a specific Article
+	 * 
+	 * @return null 
+	*/
+	public function GetComments() {
+
+		$data['comments'] = (new ArticleCommentsModel())->getArticleComments($this->get['id']);
+
+		$this->renderJson([
+			'message' 	=> 'Data retrieved successfully.',
+			'data'		=> [
+				'title' => (new ArticleModel())->getFieldData('title', $this->get['id']),
+				'view' 	=> $this->view->load('ArticlesComments', $data),
+			],
+			'success' 	=> true,
+		]);
+	}
+
+	/**
+	 * Adds a new Article
+	 * 
+	 * @return null 
+	*/
+	public function AddExec() {
+
+		$articleModel 	= new ArticleModel();
+		$insertResponse = $articleModel->insert(['date_added' => date('Y-m-d H:i:s')]);
+
+		$this->renderJson([
+			'insertId' 			=> $articleModel->db->insertId(),
+			'dateAdded' 		=> date('Y-m-d H:i:s'),
+			'articleCategories' => (new ArticleCategoryModel)->getAll(),
+			'message' 			=> (in_array($insertResponse, [1])) ? 'Record added successfully.' : 'Could not add record.',
+			'success' 			=> (in_array($insertResponse, [1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Updates a field with a received value
+	 * 
+	 * @return null 
+	*/
+	public function UpdateFieldExec() {
+
+		$updateResponse = (new ArticleModel())->update($this->post, $this->post['id']);
+
+		$this->renderJson([
+			'message' => (in_array($updateResponse, [0, 1])) ? 'Record updated successfully.' : 'Could not update record.',
+			'success' => (in_array($updateResponse, [0, 1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Upload a Article Photo
+	 * 
+	 * @return null 
+	*/
+	public function FileUploadExec() {
+
+		if (!empty($_FILES['file']['name']) && $this->post('id', 0) != 0) {
+
+			$destinationFolder 			= 'UserData/Articles/Main/';
+			$destinationDeleteFolder 	= 'UserData/Articles/Deleted/';
+			$destinationFile 			= time().rand().FileService::getExtension($_FILES['file']['name']);
+
+			$imageName = (new ArticleModel())->getFieldData('photo', $this->post['id']);
+
+			if (!empty($imageName)) {
+				FileService::moveFile($destinationFolder . $imageName, $destinationDeleteFolder . $imageName, true);
+			}
+
+			move_uploaded_file($_FILES['file']['tmp_name'], $destinationFolder . $destinationFile);
+
+			$updateResponse = (new ArticleModel())->update(['photo' => $destinationFile], $this->post['id']);
+
+			$this->session->flash->message = ($updateResponse == 1) ? 'Image uploaded successfully.' : 'Could not upload image.';
+			$this->session->flash->success = ($updateResponse == 1) ? true : false;
+
+			$this->redirect(Config::get('path.web') . 'Articles');
+
+		} else {
+			HttpService::code400();
+		}
+	}
+
+	/**
+	 * Upload a Article Photo from Description Modal
+	 * 
+	 * @return null 
+	*/
+	public function DescriptionFileUploadExec() {
+
+		if (!empty($_FILES['file']['name']) && $this->post('id', 0) != 0) {
+
+
+			$destinationFolder 			= 'UserData/Articles/Detailed/';
+			$destinationDeleteFolder 	= 'UserData/Articles/Deleted/';
+
+			foreach ($_FILES['file']['name'] as $key => $filename) {
+
+				$destinationFile = time().rand().FileService::getExtension($filename);
+
+				move_uploaded_file($_FILES['file']['tmp_name'][$key], $destinationFolder . $destinationFile);
+
+				$updateResponse[] = (new ArticlePhotoModel())->insert(['article_id' => $this->post['id'], 'filename' => $destinationFile]);
+			}
+
+			$this->session->flash->message = (in_array(false, $updateResponse) === false) ? 'Image uploaded successfully.' : 'Could not upload image.';
+			$this->session->flash->success = (in_array(false, $updateResponse) === false) ? true : false;
+
+			$this->redirect(Config::get('path.web') . 'Articles');
+
+		} else {
+			HttpService::code400();
+		}
+	}
+
+	/**
+	 * Deletes Photo Article Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteImageExec() {
+
+		$imageName = (new ArticleModel())->getFieldData('photo', $this->get['id']);
+
+		$destinationFolder 			= 'UserData/Articles/Main/';
+		$destinationDeleteFolder 	= 'UserData/Articles/Deleted/';
+
+		if (!empty($imageName)) {
+			$fileMove = FileService::moveFile($destinationFolder . $imageName, $destinationDeleteFolder . $imageName, true);
+		}
+
+		$updateResponse = (new ArticleModel())->update(['photo' => ''], $this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($updateResponse, [0, 1]) && $fileMove === true) ? 'Image deleted successfully.' : 'Could not delete Image.',
+			'success' => (in_array($updateResponse, [0, 1]) && $fileMove === true) ? true : false,
+		]);
+	}
+
+	/**
+	 * Deletes Photo Article from Edit Description Section Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteDescriptionImageExec() {
+
+		$imageName = (new ArticlePhotoModel())->getFilenameById($this->get['id']);
+
+		$destinationFolder 			= 'UserData/Articles/Detailed/';
+		$destinationDeleteFolder 	= 'UserData/Articles/Deleted/';
+
+		if (!empty($imageName)) {
+			$fileMove = FileService::moveFile($destinationFolder . $imageName, $destinationDeleteFolder . $imageName, true);
+		} else {
+			$fileMove = true;
+		}
+
+		$deleteResponse = (new ArticlePhotoModel())->delete($this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($deleteResponse, [0, 1]) && $fileMove === true) ? 'Image deleted successfully.' : 'Could not delete Image.',
+			'success' => (in_array($deleteResponse, [0, 1]) && $fileMove === true) ? true : false,
+		]);
+	}
+
+	/**
+	 * Deletes Article Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteExec() {
+
+		$deleteResponse = (new ArticleModel())->delete($this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($deleteResponse, [0, 1])) ? 'Article deleted successfully.' : 'Could not delete Article.',
+			'success' => (in_array($deleteResponse, [0, 1])) ? true : false,
+		]);
+	}
+
+	/**
+	 * Deletes Article Comment Controller Action
+	 * 
+	 * @return null 
+	*/
+	public function DeleteCommentExec() {
+
+		$deleteResponse = (new ArticleCommentsModel())->delete($this->get['id']);
+
+		$this->renderJson([
+			'message' => (in_array($deleteResponse, [0, 1])) ? 'Comment deleted successfully.' : 'Could not delete Comment.',
+			'success' => (in_array($deleteResponse, [0, 1])) ? true : false,
+		]);
+	}
+}
