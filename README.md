@@ -2,24 +2,25 @@
 Just another MVC framework.
 
 # Requirements
-php >= 5.6
-Jasmine Unit Testing (optional in case you use it)
-SASS (optional in case you use it)
+	php >= 5.6
+	Jasmine Unit Testing (optional in case you use it)
+	SASS (optional in case you use it)
 
 # Instalation
-Copy project to your working folder.
+	Copy project to your working folder.
 
-Set writing permission to folders:
-	/Temp
-	/Public/UserData/*
+	Set writing permission to folders:
 
-Set home directory to: "/Public" folder
+		/Temp
+		/Public/UserData/*
 
-Setup configuration files in "/Config" for each environment.
+	Set home directory to: "/Public" folder
 
-Setup routes in "/Config/Routes.php"
+	Setup configuration files in "/Config" for each environment.
 
-Do not commit "Config/Config.php". Each server should have its own copy.
+	Setup routes in "/Config/Routes.php"
+
+	Do not commit "Config/Config.php". Each server should have its own copy.
 
 # Deploy
 	Do not deploy the following:
