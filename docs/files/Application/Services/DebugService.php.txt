@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Debug Service The purpose of it is to write less code and have more details in debugging
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application\Services
+ * @version 1.0.1
+*/
+
+namespace Application\Services;
+
+/**
+ * Debug Service Class The purpose of it is to write less code and have more details in debugging
+ * 
+*/
+class DebugService
+{
+
+    /**
+     * Outputs a debug message in a formatted manner.
+     *
+     * @param string $output The variable you want to output.
+     * @param bool $die Whether the application should halt after outputing or not.
+     * @param string $mode The mode you want to ouput. p use print_r; v use var_dump; Default is p.
+     * @return null Outputs directly on the screen the result of your debug.
+    */
+    public static function debug($output = '', $die = false, $mode = 'p')
+    {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            print_r($output);
+            echo "\n";
+        } else {
+            echo '<pre>';
+            switch ($mode) {
+                case 'v':
+                    var_dump($output);
+                    break;
+                case 'p':
+                default:
+                    print_r($output);
+                    break;
+            }
+            echo '</pre>';
+            echo "<br />";
+        }
+
+        if ($die) {
+            die;
+        }
+    }
+}

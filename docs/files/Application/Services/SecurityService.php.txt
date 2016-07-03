@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * Security Service Several security appliances
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Application\Services
+ * @version 1.0.1
+*/
+
+namespace Application\Services;
+
+/**
+ * Security Service Class Several security appliances
+ * 
+*/
+class SecurityService {
+
+    /**
+     * Generate a code.
+     *
+     * @param int $length The length of your desired code.
+     * @param string $delimiter Which delimiter you want to use. Default is "-".
+     * @param int $delimiterRepeatAt After how many characters you want to have de delimiter. Default is after 5.
+     * @throws \Exception Invalid input type specified 
+     * @throws \Exception Invalid length specified. Must be higher than 0.
+     * @throws \Exception Invalid delimiterRepeatAt specified. Must be higher than 0. To not use it, set it equal with length parameter.
+     * @return string The resulting code.
+    */
+	public static final function GenerateCode($length = 29, $delimiter = '-', $delimiterRepeatAt = 5) {
+
+		if (!is_int($length) || !is_string($delimiter) || !is_int($delimiterRepeatAt)) {
+			throw new \Exception("Invalid input type specified", 1);
+		}
+
+		if ($length < 1) {
+			throw new \Exception("Invalid length specified. Must be higher than 0.", 1);
+		}
+
+		if ($delimiterRepeatAt < 1) {
+			throw new \Exception("Invalid delimiterRepeatAt specified. Must be higher than 0. To not use it, set it equal with length parameter.", 1);
+		}
+
+		$result = '';
+
+		for ($i = 1; $i <= $length; $i++) {
+			$result .= ($i % ($delimiterRepeatAt + 1) == 0)  ?  $delimiter  :  ( (rand(1, 2) == 1) ? chr(rand(65, 90)) : rand(0, 9) );
+		}
+
+		return trim(substr($result, 0, $length), $delimiter);
+	}
+}

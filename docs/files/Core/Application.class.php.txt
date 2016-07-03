@@ -1,0 +1,34 @@
+<?php
+
+/**
+ * Application controls main directives of the application
+ *
+ * @author Iulian Cristea
+ * @copyright 2015-2016 memobit.ro
+ * @license http://opensource.org/licenses/gpl-license.php GNU Public License
+ * @package Core
+ * @version 1.0.1
+*/
+
+namespace Core;
+
+/**
+ * Application Class controls main directives of the application
+ * 
+*/
+class Application {
+
+	/**
+	 * Determines the environment of the current application
+	 * 
+	 * @param bool $checkedEnvironment If is set, it will compare the given environment with the current environment and will return true on match and flase otherwise.
+	 *
+	 * @return string If is not set $checkedEnvironment it will return the environment. If is set $checkedEnvironment, it will compare the given environment with the current environment and will return true on match and flase otherwise. 
+	*/
+	public static function environment($checkedEnvironment = null) {
+
+		$environment = require(dirname(__FILE__) . '/../Config/Config.php');
+
+		return (is_null($checkedEnvironment)) ? $environment : ($checkedEnvironment == $environment);
+	}
+}
