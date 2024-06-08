@@ -133,8 +133,8 @@
 
 
 
-		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-2.1.1.min.js"></script>
-		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-ui-1.10.3.min.js"></script>
+		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-3.7.1.min.js"></script>
+		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-ui-1.13.3.custom/jquery-ui.min.j"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/Bootstrap/bootstrap.min.js"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/Bootstrap/Toggle/bootstrap-toggle.min.js"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/datetimepicker-master/build/jquery.datetimepicker.full.min.js"></script>

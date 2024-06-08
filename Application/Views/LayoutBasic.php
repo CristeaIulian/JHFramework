@@ -51,9 +51,9 @@
 				</div>
 			</div>
 		</div>
-		
-		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-2.1.1.min.js"></script>
-		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-ui-1.10.3.min.js"></script>
+
+		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-3.7.1.min.js"></script>
+		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jquery-ui-1.13.3.custom/jquery-ui.min.js"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/Bootstrap/bootstrap.min.js"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/CheckPasswordStrength.js"></script>
 		<script type="text/javascript" src="<?php echo Core\Config::get('path.web'); ?>Assets/Resources/JQuery/jvalidate-1.2.1/jvalidate-1.2.1.js"></script>
